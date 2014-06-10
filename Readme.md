@@ -239,7 +239,141 @@ And add in its place the new one which you get after unzipping the file download
 
 ## Setting up CoreData
 
-The boilerplate code
+Like in the managed SDK, the offline support in the iOS Mobile Services SDK is implemented in a store-agnostic way - meaning that in you could use whatever persistent store you want as long as it complies with the `MSSyncContextDataSource` protocol. That is a fairly low level protocol, and we don't expect many people to implement their own data sources, so we're including in this preview one data source which is based on the [Core Data framework](https://developer.apple.com/library/ios/documentation/Cocoa/Conceptual/CoreData/cdProgrammingGuide.html).
+
+Since we're using this data store, let's prepare the application to work with Core Data. First, open the application target, and in its "Build phases", under the "Link Binary With Libraries", add the CoreData.framework
+
+![Linked frameworks](images/007-AddCoreDataFramework.png)
+
+Next, let's add the Core Data boilerplate code. Open the QSAppDelegate header file and add the following declarations:
+
+    #import <UIKit/UIKit.h>
+    #import <CoreData/CoreData.h>
+
+    @interface QSAppDelegate : UIResponder <UIApplicationDelegate>
+
+    @property (strong, nonatomic) UIWindow *window;
+
+    @property (readonly, strong, nonatomic) NSManagedObjectContext *managedObjectContext;
+    @property (readonly, strong, nonatomic) NSManagedObjectModel *managedObjectModel;
+    @property (readonly, strong, nonatomic) NSPersistentStoreCoordinator *persistentStoreCoordinator;
+
+    - (void)saveContext;
+    - (NSURL *)applicationDocumentsDirectory;
+
+    @end
+
+Now open the implementation file (QSAppDelegate.m) and add the implementation for the core data stack methods. Notice that this is pretty much the code that you get when you create a new application in Xcode and select the "Use Core Data" checkbox.
+
+    @implementation QSAppDelegate
+
+    @synthesize managedObjectContext = _managedObjectContext;
+    @synthesize managedObjectModel = _managedObjectModel;
+    @synthesize persistentStoreCoordinator = _persistentStoreCoordinator;
+
+    - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+    {
+        return YES;
+    }
+
+    - (void)saveContext
+    {
+        NSError *error = nil;
+        NSManagedObjectContext *managedObjectContext = self.managedObjectContext;
+        if (managedObjectContext != nil) {
+            if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error]) {
+                // Replace this implementation with code to handle the error appropriately.
+                // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+                abort();
+            }
+        }
+    }
+
+    #pragma mark - Core Data stack
+
+    // Returns the managed object context for the application.
+    // If the context doesn't already exist, it is created and bound to the persistent store coordinator for the application.
+    - (NSManagedObjectContext *)managedObjectContext
+    {
+        if (_managedObjectContext != nil) {
+            return _managedObjectContext;
+        }
+
+        NSPersistentStoreCoordinator *coordinator = [self persistentStoreCoordinator];
+        if (coordinator != nil) {
+            _managedObjectContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
+            [_managedObjectContext setPersistentStoreCoordinator:coordinator];
+        }
+        return _managedObjectContext;
+    }
+
+    // Returns the managed object model for the application.
+    // If the model doesn't already exist, it is created from the application's model.
+    - (NSManagedObjectModel *)managedObjectModel
+    {
+        if (_managedObjectModel != nil) {
+            return _managedObjectModel;
+        }
+        NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"QSTodoDataModel" withExtension:@"momd"];
+        _managedObjectModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
+        return _managedObjectModel;
+    }
+
+    // Returns the persistent store coordinator for the application.
+    // If the coordinator doesn't already exist, it is created and the application's store added to it.
+    - (NSPersistentStoreCoordinator *)persistentStoreCoordinator
+    {
+        if (_persistentStoreCoordinator != nil) {
+            return _persistentStoreCoordinator;
+        }
+
+        NSURL *storeURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"qstodoitem.sqlite"];
+
+        NSError *error = nil;
+        _persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];
+        if (![_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error]) {
+            /*
+             Replace this implementation with code to handle the error appropriately.
+
+             abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+
+             Typical reasons for an error here include:
+             * The persistent store is not accessible;
+             * The schema for the persistent store is incompatible with current managed object model.
+             Check the error message to determine what the actual problem was.
+
+             If the persistent store is not accessible, there is typically something wrong with the file path. Often, a file URL is pointing into the application's resources directory instead of a writeable directory.
+
+             If you encounter schema incompatibility errors during development, you can reduce their frequency by:
+             * Simply deleting the existing store:
+             [[NSFileManager defaultManager] removeItemAtURL:storeURL error:nil]
+
+             * Performing automatic lightweight migration by passing the following dictionary as the options parameter:
+             @{NSMigratePersistentStoresAutomaticallyOption:@YES, NSInferMappingModelAutomaticallyOption:@YES}
+
+             Lightweight migration will only work for a limited set of schema changes; consult "Core Data Model Versioning and Data Migration Programming Guide" for details.
+
+             */
+
+            NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+            abort();
+        }
+
+        return _persistentStoreCoordinator;
+    }
+
+    #pragma mark - Application's Documents directory
+
+    // Returns the URL to the application's Documents directory.
+    - (NSURL *)applicationDocumentsDirectory
+    {
+        return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
+    }
+
+    @end
+
+At this point the application is (almost) ready to use Core Data, but it's not doing anything with it.
 
 ## Defining the model
 

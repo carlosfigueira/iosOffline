@@ -26,6 +26,7 @@
 		03D1006816ED41D20005A1A9 /* connected144.png in Resources */ = {isa = PBXBuildFile; fileRef = 03D1006416ED41D20005A1A9 /* connected144.png */; };
 		8799117F194693FC006E1D57 /* QSTodoItemViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8799117E194693FC006E1D57 /* QSTodoItemViewController.m */; };
 		879911811946BC16006E1D57 /* WindowsAzureMobileServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 879911801946BC16006E1D57 /* WindowsAzureMobileServices.framework */; };
+		879911831946BFB9006E1D57 /* CoreData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 879911821946BFB9006E1D57 /* CoreData.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -55,6 +56,7 @@
 		8799117D194693FC006E1D57 /* QSTodoItemViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = QSTodoItemViewController.h; path = ../QSTodoItemViewController.h; sourceTree = "<group>"; };
 		8799117E194693FC006E1D57 /* QSTodoItemViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = QSTodoItemViewController.m; path = ../QSTodoItemViewController.m; sourceTree = "<group>"; };
 		879911801946BC16006E1D57 /* WindowsAzureMobileServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = WindowsAzureMobileServices.framework; sourceTree = "<group>"; };
+		879911821946BFB9006E1D57 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +64,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				879911831946BFB9006E1D57 /* CoreData.framework in Frameworks */,
 				03D1001E16EC579A0005A1A9 /* UIKit.framework in Frameworks */,
 				03D1002016EC579A0005A1A9 /* Foundation.framework in Frameworks */,
 				879911811946BC16006E1D57 /* WindowsAzureMobileServices.framework in Frameworks */,
@@ -92,6 +95,7 @@
 		03D1001C16EC579A0005A1A9 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				879911821946BFB9006E1D57 /* CoreData.framework */,
 				879911801946BC16006E1D57 /* WindowsAzureMobileServices.framework */,
 				03D1001D16EC579A0005A1A9 /* UIKit.framework */,
 				03D1001F16EC579A0005A1A9 /* Foundation.framework */,
