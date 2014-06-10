@@ -8,11 +8,11 @@ To present the new feature in the SDK, we'll walk through the steps to make our 
 
 To start off the walkthough, let's use the quickstart application that you can download in the portal. Create a new mobile service (for this example, let's use the node.js backend, which can be set up quicker than the .NET one.
 
-[[Image: 001-CreateNewMobileService.PNG]]
+![Create new mobile service](images/001-CreateNewMobileService.png)
 
 Once the service is created, download the iOS quickstart to your Mac.
 
-[[Image: 002-DownloadQuickstart.PNG]]
+![Download quickstart](images/002-DownloadQuickstart.png)
 
 Open it in Xcode and we're ready to add offline support to it. We're now ready to start playing with it.
 
