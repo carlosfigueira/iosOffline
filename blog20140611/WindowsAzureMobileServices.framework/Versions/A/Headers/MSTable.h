@@ -7,9 +7,7 @@
 
 @class MSQuery;
 
-
 #pragma mark * Block Type Definitions
-
 
 /// Callback for updates, inserts or readWithId requests. If there was an
 /// error, the *error* will be non-nil.
@@ -36,6 +34,7 @@ typedef NS_OPTIONS(NSUInteger, MSSystemProperties) {
     MSSystemPropertyAll         = 0xFFFF
 };
 
+extern NSString *const MSSystemColumnId;
 extern NSString *const MSSystemColumnCreatedAt;
 extern NSString *const MSSystemColumnUpdatedAt;
 extern NSString *const MSSystemColumnVersion;
@@ -123,6 +122,17 @@ extern NSString *const MSSystemColumnVersion;
 -(void)deleteWithId:(id)itemId
          parameters:(NSDictionary *)parameters
          completion:(MSDeleteBlock)completion;
+
+/// Sends a request to the Windows Azure Mobile Service to undelete the item
+/// with the given id in from table.
+-(void)undelete:(NSDictionary *)item completion:(MSItemBlock)completion;
+
+/// Sends a request to the Windows Azure Mobile Service to undelete the item
+/// with the given id in from table. Addtional user-defined parameters are
+/// sent in the request query string.
+-(void)undelete:(NSDictionary *)item
+     parameters:(NSDictionary *)parameters
+     completion:(MSItemBlock)completion;
 
 ///@}
 

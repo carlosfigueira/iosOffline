@@ -12,9 +12,14 @@
 #import "MSFilter.h"
 #import "MSError.h"
 #import "MSLoginController.h"
+#import "MSTableOperation.h"
+#import "MSSyncContext.h"
+#import "MSSyncTable.h"
+#import "MSTableOperationError.h"
+#import "MSCoreDataStore.h"
 
 #define WindowsAzureMobileServicesSdkMajorVersion 1
 #define WindowsAzureMobileServicesSdkMinorVersion 1
-#define WindowsAzureMobileServicesSdkBuildVersion 20328
+#define WindowsAzureMobileServicesSdkBuildVersion 0
 
 #endif

@@ -229,7 +229,13 @@ And we're done with the preparation. The quick start project has been updated to
 
 ## Updating the framework
 
-Download alpha version of our framework from some TBD link
+The first thing we'll need to do to add offline support in our application is to get a version of the Mobile Services iOS SDK which supports it. Since we're launching it as a preview feature, it won't be in the official download location. So go to **ADD THE LINK TO THE FRAMEWORK HERE** and download it locally.
+
+Then, remove the existing framework from the project in Xcode, selecting "Move to Trash" to really delete the files.
+
+![Remove existing Mobile Services framework](images/006-RemovePreviousVersionOfFramework.png)
+
+And add in its place the new one which you get after unzipping the file downloaded above (make sure the "Copy items into destination group's folder (if needed)" is selected).
 
 ## Setting up CoreData
 
