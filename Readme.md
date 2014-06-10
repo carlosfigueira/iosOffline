@@ -34,9 +34,9 @@ Then, remove the existing framework from the project in Xcode, selecting "Move t
 
 And add in its place the new one which you get after unzipping the file downloaded above (make sure the "Copy items into destination group's folder (if needed)" is selected).
 
-## Setting up CoreData
+## Setting up Core Data
 
-Like in the managed SDK, the offline support in the iOS Mobile Services SDK is implemented in a store-agnostic way - meaning that in you could use whatever persistent store you want as long as it complies with the `MSSyncContextDataSource` protocol. That is a fairly low level protocol, and we don't expect many people to implement their own data sources, so we're including in this preview one data source which is based on the [Core Data framework](https://developer.apple.com/library/ios/documentation/Cocoa/Conceptual/CoreData/cdProgrammingGuide.html).
+Like in the managed SDK, the offline support in the iOS Mobile Services SDK is implemented in a store-agnostic way - meaning you could use whatever persistent store you want as long as it complies with the `MSSyncContextDataSource` protocol. That is a fairly low level protocol, and we don't expect many people to implement their own data sources, so we're including in this preview one data source which is based on the [Core Data framework](https://developer.apple.com/library/ios/documentation/Cocoa/Conceptual/CoreData/cdProgrammingGuide.html).
 
 Since we're using this data store, let's prepare the application to work with Core Data. First, open the application target, and in its "Build phases", under the "Link Binary With Libraries", add the CoreData.framework
 
@@ -60,7 +60,7 @@ Next, let's add the Core Data boilerplate code. Open the QSAppDelegate header fi
 
     @end
 
-Now open the implementation file (QSAppDelegate.m) and add the implementation for the core data stack methods. Notice that this is pretty much the code that you get when you create a new application in Xcode and select the "Use Core Data" checkbox.
+Now open the implementation file (QSAppDelegate.m) and add the implementation for the core data stack methods. Notice that this is pretty much the code that you get when you create a new application in Xcode and select the "Use Core Data" checkbox, with the main difference that we're using a private queue concurrency type when initializing the `NSManagedContextObject`.
 
     @implementation QSAppDelegate
 
@@ -180,11 +180,11 @@ The last thing we need to do to use the Core Data framework is to define the dat
 
 In the project, select "New File", and under the Core Data section, select Data Model.
 
-!(New Core Data Model)[008-AddCoreDataModel.png]
+!(New Core Data Model)[images/008-AddCoreDataModel.png]
 
 Select an appropriate name (I'll use QSTodoDataModel.xcdatamodeld) and click Create. Select the data model in the folder view, then add the entities required for the application, by selecting the "Add Entity" button in the bottom of the page.
 
-!(Add Entity button)[009-AddEntity.png]
+!(Add Entity button)[images/009-AddEntity.png]
 
 Add three entities, named "TodoItem", "MS_TableOperations" and "MS_TableOperationErrors" (the first to store the items themselves; the last two are framework-specific tables required for the offline feature to work) with attributes defined as below:
 
@@ -230,7 +230,7 @@ Now, in the initializer for the QSTodoService class, remove the line that create
     self.client.syncContext = [[MSSyncContext alloc] initWithDelegate:nil dataSource:store callback:nil];
 
     // Create an MSSyncTable instance to allow us to work with the TodoItem table
-    self.syncTable = [_client syncTableWithName:@"TodoItem"];
+    self.syncTable = [self.client syncTableWithName:@"TodoItem"];
 
 Before we can start using the offline feature, we need to initialize the sync context of the client. The context is responsible for tracking which items have been changed locally, and sending those to the server when a push operation is started. To initialize the context we need a data source (for which we can use the `MSCoreDataStore` implementation of the protocol), and an optional `MSSyncContextDelegate` implementation. For now we can pass `nil`, but we'll get back to it when talking about conflicts.
 
@@ -341,7 +341,7 @@ Another thing which you may have also noticed is that after we changed the code 
         completion();
     });
 
-Since we initialized the `NSManagedObjectContext` with a [`NSPrivateQueueConcurrencyType`](https://developer.apple.com/library/ios/documentation/cocoa/Reference/CoreDataFramework/Classes/NSManagedObjectContext_Class/NSManagedObjectContext.html#//apple_ref/c/econst/NSPrivateQueueConcurrencyType) (in the `managedObjectContext` method of the `QSAppDelegate` implementation), the operations performed by the context will be associated with a private dispatch queue, so we need to dispatch the result back to the main (UI) queue to be able to access the UI controls. If you had initialized the object context with the [`NSMainQueueConcurrencyType`](https://developer.apple.com/library/ios/documentation/cocoa/Reference/CoreDataFramework/Classes/NSManagedObjectContext_Class/NSManagedObjectContext.html#//apple_ref/c/econst/NSMainQueueConcurrencyType) that dispatch call would not have been necessary.
+Since when we initialized the sync context, we did not pass a callback parameter, the framework creates a default serial queue for you which dispatches the results of all sync table operations into into a background thread. This is advantageous for performance reasons as data operations are executed in the background, but when using the results to modify UI components we need to dispatch the code back to the UI thread.
 
 ## Conflict handling
 

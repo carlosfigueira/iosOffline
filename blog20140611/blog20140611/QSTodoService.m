@@ -68,7 +68,7 @@
         self.client.syncContext = [[MSSyncContext alloc] initWithDelegate:syncDelegate dataSource:store callback:nil];
 
         // Create an MSSyncTable instance to allow us to work with the TodoItem table
-        self.syncTable = [_client syncTableWithName:@"TodoItem"];
+        self.syncTable = [self.client syncTableWithName:@"TodoItem"];
 
         self.items = [[NSMutableArray alloc] init];
         self.busyCount = 0;
