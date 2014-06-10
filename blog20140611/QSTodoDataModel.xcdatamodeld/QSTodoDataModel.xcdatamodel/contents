@@ -5,7 +5,7 @@
         <attribute name="properties" optional="YES" attributeType="Binary" syncable="YES"/>
     </entity>
     <entity name="MS_TableOperations" syncable="YES">
-        <attribute name="id" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="id" optional="YES" attributeType="Integer 64" defaultValueString="0" syncable="YES"/>
         <attribute name="itemId" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="properties" optional="YES" attributeType="Binary" syncable="YES"/>
         <attribute name="table" optional="YES" attributeType="String" syncable="YES"/>

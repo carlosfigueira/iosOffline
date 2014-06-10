@@ -391,7 +391,7 @@ Select an appropriate name (I'll use QSTodoDataModel.xcdatamodeld) and click Cre
 
 Add three entities, named "TodoItem", "MS_TableOperations" and "MS_TableOperationErrors" (the first to store the items themselves; the last two are framework-specific tables required for the offline feature to work) with attributes defined as below:
 
-** TodoItem **
+**TodoItem**
 
 | Attribute  |  Type   |
 |----------- |  ------ |
@@ -400,16 +400,16 @@ Add three entities, named "TodoItem", "MS_TableOperations" and "MS_TableOperatio
 | text       | String  |
 | ms_version | String  |
 
-** MS_TableOperations **
+**MS_TableOperations**
 
 | Attribute  |    Type     |
 |----------- |   ------    |
-| id         | String      |
+| id         | Integer 64  |
 | properties | Binary Data |
 | itemId     | String      |
 | table      | String      |
 
-** MS_TableOperationErrors **
+**MS_TableOperationErrors**
 
 | Attribute  |    Type     |
 |----------- |   ------    |
@@ -420,7 +420,113 @@ Save the model, and build the project to make sure that everything is fine. As b
 
 ## From table to sync table
 
-Just like in the managed case, we make a simple change in the code - instead of using MSTable, we start using MSSyncTable (from `[client tableWithName:]` to `[client syncTableWithName:]`).
+And let's start caching some data offline! There are a few things we'll need to change. First, instead of using the regular `MSTable` class to access the mobile service, we'll use a different class now: `MSSyncTable`. A sync table is basically a local table which "knows" how to push changes made locally to the "remote" table, and pull items from that table locally. We'll also need to initialize the *synchronization context* in the `MSClient` (a new property) with the data source that we choose (in our case, the Core Data-based store implementation as I mentioned before). Let's start. In the implementation for the QSTodoService class, remove the private property `table`, and add the following property for the sync table:
+
+    @property (nonatomic, strong) MSSyncTable *syncTable;
+
+Now, in the initializer for the QSTodoService class, remove the line that creates the MSTable object and replace it with the following lines (you'll also need to `#include "QSAppDelegate.h"):
+
+    QSAppDelegate *delegate = (QSAppDelegate *)[[UIApplication sharedApplication] delegate];
+    NSManagedObjectContext *context = delegate.managedObjectContext;
+    MSCoreDataStore *store = [[MSCoreDataStore alloc] initWithManagedObjectContext:context];
+
+    self.client.syncContext = [[MSSyncContext alloc] initWithDelegate:nil dataSource:store callback:nil];
+
+    // Create an MSSyncTable instance to allow us to work with the TodoItem table
+    self.syncTable = [_client syncTableWithName:@"TodoItem"];
+
+Before we can start using the offline feature, we need to initialize the sync context of the client. The context is responsible for tracking which items have been changed locally, and sending those to the server when a push operation is started. To initialize the context we need a data source (for which we can use the `MSCoreDataStore` implementation of the protocol), and an optional `MSSyncContextDelegate` implementation. For now we can pass `nil`, but we'll get back to it when talking about conflicts.
+
+We now need to update the operations in the `QSTodoService` class to use the sync table instead of the (regular / remote) table. First, the `refreshDataOnSuccess`, which retrieves the data from the service. This time, we'll first ask the sync table to pull any items which match our criteria, then we'll load the data from the *local* (sync) table into the `items` property of the service.
+
+    - (void)refreshDataOnSuccess:(QSCompletionBlock)completion
+    {
+        // Create a predicate that finds items where complete is false
+        NSPredicate * predicate = [NSPredicate predicateWithFormat:@"complete == NO"];
+
+        MSQuery *query = [self.syncTable queryWithPredicate:predicate];
+
+        // Pulls data from the remote server into the local table. We're only
+        // pulling the items which we want to display (complete == NO).
+        [self.syncTable pullWithQuery:query completion:^(NSError *error) {
+            [self logErrorIfNotNil:error];
+
+            [self loadLocalDataWithCompletion:completion];
+        }];
+    }
+
+    - (void) loadLocalDataWithCompletion:(QSCompletionBlock)completion
+    {
+        NSPredicate * predicate = [NSPredicate predicateWithFormat:@"complete == NO"];
+        MSQuery *query = [self.syncTable queryWithPredicate:predicate];
+
+        [query orderByAscending:@"text"];
+        [query readWithCompletion:^(NSArray *results, NSInteger totalCount, NSError *error) {
+            [self logErrorIfNotNil:error];
+
+            items = [results mutableCopy];
+
+            // Let the caller know that we finished
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion();
+            });
+        }];
+    }
+
+For inserts, we only insert into the sync table. That operation will then be *queued* so that until we push the changes to the remote service, it will only be visible to the client where it was performed.
+
+    -(void)addItem:(NSDictionary *)item completion:(QSCompletionWithIndexBlock)completion
+    {
+        // Insert the item into the TodoItem table and add to the items array on completion
+        [self.syncTable insert:item completion:^(NSDictionary *result, NSError *error)
+         {
+             [self logErrorIfNotNil:error];
+
+             NSUInteger index = [items count];
+             [(NSMutableArray *)items insertObject:result atIndex:index];
+
+             // Let the caller know that we finished
+             dispatch_async(dispatch_get_main_queue(), ^{
+                 completion(index);
+             });
+         }];
+    }
+
+A similar change for the update operation. One minor difference is that for `MSTable` update operations, the completion block returns the updated item, since a script (or controller action) in the server can modify the item being updated, and we want that modification to be reflected on the client. For local tables, the updated items are not modified, so the completion block doesn't have a parameter for that updated item. 
+
+    - (void)updateItem:(NSDictionary *)item atIndex:(NSInteger)index completion:(QSCompletionWithIndexBlock)completion {
+        // Cast the public items property to the mutable type (it was created as mutable)
+        NSMutableArray *mutableItems = (NSMutableArray *) items;
+
+        // Replace the original in the items array
+        [mutableItems replaceObjectAtIndex:index withObject:item];
+
+        // Update the item in the TodoItem table and remove from the items array on completion
+        [self.syncTable update:item completion:^(NSError *error) {
+            [self logErrorIfNotNil:error];
+
+            NSInteger index = -1;
+            if (!error) {
+                BOOL isComplete = [[item objectForKey:@"complete"] boolValue];
+                NSString *remoteId = [item objectForKey:@"id"];
+                index = [items indexOfObjectPassingTest:^BOOL(id obj, NSUInteger idx, BOOL *stop) {
+                    return [remoteId isEqualToString:[obj objectForKey:@"id"]];
+                }];
+
+                if (index != NSNotFound && isComplete)
+                {
+                    [mutableItems removeObjectAtIndex:index];
+                }
+            }
+
+            // Let the caller know that we have finished
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion(index);
+            });
+        }];
+    }
+
+We can now really test the application offline. Add a few items in the app. Then go to the portal and browse the data (or use a networking tool such as PostMan or Fiddler to query the table directly). You'll see that the items have not been added to the service yet. Now perform the refresh gesture in the app by dragging it from the top. You'll see that the data has been saved in the cloud now. You can even close the app after adding (or editing) some items. When you launch the app again it will synchronize with the server (more on that later) and your changes will have been saved.
 
 ## Pulling and pushing
 
