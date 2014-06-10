@@ -17,7 +17,7 @@
 #import <WindowsAzureMobileServices/WindowsAzureMobileServices.h>
 #import "QSTodoListViewController.h"
 #import "QSTodoService.h"
-
+#import "QSTodoItemViewController.h"
 
 #pragma mark * Private Interface
 
@@ -27,6 +27,8 @@
 // Private properties
 @property (strong, nonatomic)   QSTodoService   *todoService;
 @property (nonatomic)           BOOL            useRefreshControl;
+@property (nonatomic)           NSInteger       editedItemIndex;
+@property (strong, nonatomic)   NSMutableDictionary *editedItem;
 
 @end
 
@@ -86,49 +88,60 @@
     }];
 }
 
+#pragma mark * Storyboard methods
+
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    if ([[segue identifier] isEqualToString:@"detailSegue"]) {
+        QSTodoItemViewController *ivc = (QSTodoItemViewController *)[segue destinationViewController];
+        ivc.item = self.editedItem;
+    }
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    if (self.editedItem && self.editedItemIndex >= 0) {
+        // Returning from the details view controller
+        NSDictionary *item = [self.todoService.items objectAtIndex:self.editedItemIndex];
+
+        BOOL changed = ![item isEqualToDictionary:self.editedItem];
+        if (changed) {
+            [self.tableView setUserInteractionEnabled:NO];
+
+            // Change the appearance to look greyed out until we remove the item
+            NSIndexPath *indexPath = [NSIndexPath indexPathForRow:self.editedItemIndex inSection:0];
+
+            UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
+            cell.textLabel.textColor = [UIColor grayColor];
+
+            // Ask the todoService to update the item, and remove the row if it's been completed
+            [self.todoService updateItem:self.editedItem atIndex:self.editedItemIndex completion:^(NSUInteger index) {
+                if ([[self.editedItem objectForKey:@"complete"] boolValue]) {
+                    // Remove the row from the UITableView
+                    [self.tableView deleteRowsAtIndexPaths:@[ indexPath ]
+                                          withRowAnimation:UITableViewRowAnimationTop];
+                } else {
+                    [self.tableView reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath]
+                                          withRowAnimation:UITableViewRowAnimationAutomatic];
+                }
+
+                [self.tableView setUserInteractionEnabled:YES];
+
+                self.editedItem = nil;
+                self.editedItemIndex = -1;
+            }];
+        } else {
+            self.editedItem = nil;
+            self.editedItemIndex = -1;
+        }
+    }
+}
 
 #pragma mark * UITableView methods
 
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    self.editedItemIndex = [indexPath row];
+    self.editedItem = [[self.todoService.items objectAtIndex:[indexPath row]] mutableCopy];
 
-- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle
- forRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    // Find item that was commited for editing (completed)
-    NSDictionary *item = [self.todoService.items objectAtIndex:indexPath.row];
-    
-    // Change the appearance to look greyed out until we remove the item
-    UILabel *label = (UILabel *)[[tableView cellForRowAtIndexPath:indexPath] viewWithTag:1];
-    label.textColor = [UIColor grayColor];
-    
-    // Ask the todoService to set the item's complete value to YES, and remove the row if successful
-    [self.todoService completeItem:item completion:^(NSUInteger index)
-    {  
-        // Remove the row from the UITableView
-        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
-        [self.tableView deleteRowsAtIndexPaths:@[ indexPath ]
-                              withRowAnimation:UITableViewRowAnimationTop];
-    }];
-}
-
--(UITableViewCellEditingStyle)tableView:(UITableView *)tableView editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    // Find the item that is about to be edited
-    NSDictionary *item = [self.todoService.items objectAtIndex:indexPath.row];
-    
-    // If the item is complete, then this is just pending upload. Editing is not allowed
-    if ([[item objectForKey:@"complete"] boolValue])
-    {
-        return UITableViewCellEditingStyleNone;
-    }
-    
-    // Otherwise, allow the delete button to appear
-    return UITableViewCellEditingStyleDelete;
-}
-
--(NSString *)tableView:(UITableView *)tableView titleForDeleteConfirmationButtonForRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    // Customize the Delete button to say "complete"
-    return @"complete";
+    [self performSegueWithIdentifier:@"detailSegue" sender:self];
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath

@@ -109,13 +109,123 @@ In the implementation (.m) file, add two private properties corresponding to the
 
     @end
 
-Now return to the storyboard and add a new view controller to the right of the list view. In the identity inspector, select the class added below as the custom class for the view controller. Then add a new push segue from the table cell in the master view controller to the detail view controller, naming the segue "detailSegue". Add the appropriate fields in the view controller (a text field for the item text; a segmented control for the complete status) and link them to the outlets in the class.
+Now return to the storyboard and add a new view controller to the right of the list view. In the identity inspector, select the class added below as the custom class for the view controller. Then add a new push segue from the master view controller to the detail view controller, naming the segue "detailSegue". Add the appropriate fields in the view controller (a text field for the item text; a segmented control for the complete status) and link them to the outlets in the class.
 
 ![Item details view controller](images/005-ItemDetailViewController.png)
 
 At this point you should be able to run the app and when selecting an item in the table, it will show the (currently empty) details view controller.
 
-### Filling data
+### Filling the detail view
+
+Now that we have the storyboard ready, we need to pass the item from the master to the detail view, and update it once we're back. Let's first remove some methods which we won't need anymore: `tableView:titleForDeleteConfirmationButtonForRowAtIndexPath:`, `tableView:editingStyleForRowAtIndexPath:` and `tableView:commitEditingStyle:forRowAtIndexPath:`. Now add two new properties which we'll use to store the item which is being edited: `editedItem` and `editedItemIndex`.
+
+    @interface QSTodoListViewController ()
+
+    // Private properties
+    @property (strong, nonatomic)   QSTodoService   *todoService;
+    @property (nonatomic)           BOOL            useRefreshControl;
+    @property (nonatomic)           NSInteger       editedItemIndex;
+    @property (strong, nonatomic)   NSMutableDictionary *editedItem;
+
+    @end
+
+Now implement the `tableView:didSelectRowAtIndexPath:` method to save the item being edited, and call the segue to display the detail view.
+
+    - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+        self.editedItemIndex = [indexPath row];
+        self.editedItem = [[self.todoService.items objectAtIndex:[indexPath row]] mutableCopy];
+
+        [self performSegueWithIdentifier:@"detailSegue" sender:self];
+    }
+
+Finally, implement the `prepareForSegue:sender:` selector to pass the item to the next controller.
+
+    - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+        if ([[segue identifier] isEqualToString:@"detailSegue"]) {
+            QSTodoItemViewController *ivc = (QSTodoItemViewController *)[segue destinationViewController];
+            ivc.item = self.editedItem;
+        }
+    }
+
+You should now be able to run the app and see the item displayed in the detail view.
+
+### Saving the edits
+
+When you click the "Back" button in the navigation view the edits are lost. We've sent data to the detail view, but the data isn't being sent back to the master. Ideally we'd implement a delegate in the master view controller so that it can be notified when edits are done, but since we already passed a pointer to a copy of the item that is being edited, we can use that pointer to retrieve the list of updates made to the item and update it in the server.
+
+But before changing the todo list view controller, we need to update the server wrapper class (`QSTodoService`), since it doesn't have a method to update items (it only has a method to mark an item as complete). Remove the method `completeItem:completion:`, and add the method below (declaration in the header file omitted)
+
+    - (void)updateItem:(NSDictionary *)item atIndex:(NSInteger)index completion:(QSCompletionWithIndexBlock)completion {
+        // Cast the public items property to the mutable type (it was created as mutable)
+        NSMutableArray *mutableItems = (NSMutableArray *) items;
+
+        // Replace the original in the items array
+        [mutableItems replaceObjectAtIndex:index withObject:item];
+
+        // Update the item in the TodoItem table and remove from the items array on completion
+        [self.table update:item completion:^(NSDictionary *updatedItem, NSError *error) {
+            [self logErrorIfNotNil:error];
+
+            NSInteger index = -1;
+            if (!error) {
+                BOOL isComplete = [[updatedItem objectForKey:@"complete"] boolValue];
+                NSString *remoteId = [updatedItem objectForKey:@"id"];
+                index = [items indexOfObjectPassingTest:^BOOL(id obj, NSUInteger idx, BOOL *stop) {
+                    return [remoteId isEqualToString:[obj objectForKey:@"id"]];
+                }];
+
+                if (index != NSNotFound && isComplete)
+                {
+                    [mutableItems removeObjectAtIndex:index];
+                }
+            }
+
+            // Let the caller know that we have finished
+            completion(index);
+        }];
+    }
+
+Now that we can update items on the server, we can implement the `viewWillAppear:` method to call the update method when the master view is being displayed while returning from the details view controller.
+
+    - (void)viewWillAppear:(BOOL)animated {
+        if (self.editedItem && self.editedItemIndex >= 0) {
+            // Returning from the details view controller
+            NSDictionary *item = [self.todoService.items objectAtIndex:self.editedItemIndex];
+
+            BOOL changed = ![item isEqualToDictionary:self.editedItem];
+            if (changed) {
+                [self.tableView setUserInteractionEnabled:NO];
+
+                // Change the appearance to look greyed out until we remove the item
+                NSIndexPath *indexPath = [NSIndexPath indexPathForRow:self.editedItemIndex inSection:0];
+
+                UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
+                cell.textLabel.textColor = [UIColor grayColor];
+
+                // Ask the todoService to update the item, and remove the row if it's been completed
+                [self.todoService updateItem:self.editedItem atIndex:self.editedItemIndex completion:^(NSUInteger index) {
+                    if ([[self.editedItem objectForKey:@"complete"] boolValue]) {
+                        // Remove the row from the UITableView
+                        [self.tableView deleteRowsAtIndexPaths:@[ indexPath ]
+                                              withRowAnimation:UITableViewRowAnimationTop];
+                    } else {
+                        [self.tableView reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath]
+                                              withRowAnimation:UITableViewRowAnimationAutomatic];
+                    }
+
+                    [self.tableView setUserInteractionEnabled:YES];
+
+                    self.editedItem = nil;
+                    self.editedItemIndex = -1;
+                }];
+            } else {
+                self.editedItem = nil;
+                self.editedItemIndex = -1;
+            }
+        }
+    }
+
+And we're done with the preparation. The quick start project has been updated to allow edits, so let's finally get to the point of this post.
 
 ## Updating the framework
 

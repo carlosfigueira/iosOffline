@@ -60,9 +60,6 @@
                                         </label>
                                     </subviews>
                                 </tableViewCellContentView>
-                                <connections>
-                                    <segue destination="zNV-zd-3eB" kind="push" identifier="detailSegue" id="YAh-8m-CRe"/>
-                                </connections>
                             </tableViewCell>
                         </prototypes>
                         <connections>
@@ -83,6 +80,7 @@
                     <connections>
                         <outlet property="activityIndicator" destination="oKL-Dt-wFv" id="676-iI-EEw"/>
                         <outlet property="itemText" destination="nO8-cY-LyE" id="TqY-u6-E5O"/>
+                        <segue destination="zNV-zd-3eB" kind="push" identifier="detailSegue" id="HEO-9S-9XE"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="rQM-X1-JbL" userLabel="First Responder" sceneMemberID="firstResponder"/>
