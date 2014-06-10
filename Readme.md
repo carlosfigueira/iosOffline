@@ -377,7 +377,46 @@ At this point the application is (almost) ready to use Core Data, but it's not d
 
 ## Defining the model
 
-Instructions on building the model. Copy the existing model (from the framework zip file), and update it to add the TodoItem entity.
+The last thing we need to do to use the Core Data framework is to define the data model which will be stored in the persistent store. If you're not familiar with Core Data you can think of it as a simplified "schema" of the local database. We need to define the tables used by the application, but we also need to define a couple of tables which will be used by the Mobile Services framework itself (both to track the items which need to be synchronized with the server, and any errors which may happen during this synchronization).
+
+*** NEED TO DEFINE THE STORY FOR THIS; ONCE WE HAVE A FRAMEWORK "ZIP" WITH THE SYSTEM TABLES WE SHOULD BE ABLE TO TELL A BETTER STORY. FOR NOW I'LL SAY WHAT WORKS ***
+
+In the project, select "New File", and under the Core Data section, select Data Model.
+
+!(New Core Data Model)[008-AddCoreDataModel.png]
+
+Select an appropriate name (I'll use QSTodoDataModel.xcdatamodeld) and click Create. Select the data model in the folder view, then add the entities required for the application, by selecting the "Add Entity" button in the bottom of the page.
+
+!(Add Entity button)[009-AddEntity.png]
+
+Add three entities, named "TodoItem", "MS_TableOperations" and "MS_TableOperationErrors" (the first to store the items themselves; the last two are framework-specific tables required for the offline feature to work) with attributes defined as below:
+
+** TodoItem **
+
+| Attribute  |  Type   |
+|----------- |  ------ |
+| id         | String  |
+| complete   | Boolean |
+| text       | String  |
+| ms_version | String  |
+
+** MS_TableOperations **
+
+| Attribute  |    Type     |
+|----------- |   ------    |
+| id         | String      |
+| properties | Binary Data |
+| itemId     | String      |
+| table      | String      |
+
+** MS_TableOperationErrors **
+
+| Attribute  |    Type     |
+|----------- |   ------    |
+| id         | String      |
+| properties | Binary Data |
+
+Save the model, and build the project to make sure that everything is fine. As before, we're just setting up the application to work with Core Data, but we haven't started using it yet.
 
 ## From table to sync table
 

@@ -27,6 +27,7 @@
 		8799117F194693FC006E1D57 /* QSTodoItemViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8799117E194693FC006E1D57 /* QSTodoItemViewController.m */; };
 		879911811946BC16006E1D57 /* WindowsAzureMobileServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 879911801946BC16006E1D57 /* WindowsAzureMobileServices.framework */; };
 		879911831946BFB9006E1D57 /* CoreData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 879911821946BFB9006E1D57 /* CoreData.framework */; };
+		879911861946C67B006E1D57 /* QSTodoDataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 879911841946C67B006E1D57 /* QSTodoDataModel.xcdatamodeld */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -57,6 +58,7 @@
 		8799117E194693FC006E1D57 /* QSTodoItemViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = QSTodoItemViewController.m; path = ../QSTodoItemViewController.m; sourceTree = "<group>"; };
 		879911801946BC16006E1D57 /* WindowsAzureMobileServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = WindowsAzureMobileServices.framework; sourceTree = "<group>"; };
 		879911821946BFB9006E1D57 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
+		879911851946C67B006E1D57 /* QSTodoDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = QSTodoDataModel.xcdatamodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +80,7 @@
 		03D1001116EC579A0005A1A9 = {
 			isa = PBXGroup;
 			children = (
+				879911841946C67B006E1D57 /* QSTodoDataModel.xcdatamodeld */,
 				03D1002316EC579A0005A1A9 /* blog20140611 */,
 				03D1001C16EC579A0005A1A9 /* Frameworks */,
 				03D1001B16EC579A0005A1A9 /* Products */,
@@ -215,6 +218,7 @@
 				03D1002A16EC579A0005A1A9 /* main.m in Sources */,
 				03D1002E16EC579A0005A1A9 /* QSAppDelegate.m in Sources */,
 				03D1004716EC58300005A1A9 /* QSTodoListViewController.m in Sources */,
+				879911861946C67B006E1D57 /* QSTodoDataModel.xcdatamodeld in Sources */,
 				03D1004A16EC58490005A1A9 /* QSTodoService.m in Sources */,
 				8799117F194693FC006E1D57 /* QSTodoItemViewController.m in Sources */,
 			);
@@ -348,6 +352,19 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCVersionGroup section */
+		879911841946C67B006E1D57 /* QSTodoDataModel.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				879911851946C67B006E1D57 /* QSTodoDataModel.xcdatamodel */,
+			);
+			currentVersion = 879911851946C67B006E1D57 /* QSTodoDataModel.xcdatamodel */;
+			path = QSTodoDataModel.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
 	};
 	rootObject = 03D1001216EC579A0005A1A9 /* Project object */;
 }
