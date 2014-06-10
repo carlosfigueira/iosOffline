@@ -530,11 +530,21 @@ We can now really test the application offline. Add a few items in the app. Then
 
 ## Pulling and pushing
 
-At this point we have a "pure offline" solution, so we need to start exchanging data between the local and the remote tables. That is accomplished via pull and push operations, and this is how we do it...
+There are basically two ways of synchronizing the data between the local store and the remote service. When we want to bring data from the service into the local tables, we need to perform a *pull* operation. This is executed in the sync table, so that you can pull data on a per-table basis. For example, if you have an application which displays orders and each order can have many items, you only need to load the orders locally, and only when an order is selected you need to pull data from the items table (assuming that the information is stored in those two tables). In the code shown in the previous section, the operation `refreshDataOnSuccess:` is pulling the data from the remote table into the local (sync) table. Notice that we can (and often should) pull only a subset of the table so that we don't overload the client with information that it may not need.
+
+When the client performs some changes (inserts / deletes / updates) in the items locally, those changes are stored in the sync context to be sent to the server. A *push* operation sends the tracked changes to the remote server. You would call push in the sync context via the `pushWithCompletion:` method.
+
+You may have noticed that in the code I showed above there are no calls to the push method. But the data is still being sent to the server, as you could see when performing the refresh gesture. What is happening is that **before a pull is executed, any pending operations are pushed to the server**. That is done to prevent conflicts - if an item is modified locally and in the service, we want to make sure that the service (the "source of truth") has the ability to reject the changes (thus the push) by returning a conflict response to the push request. An implicit push is also executed when we *purge* the local tables (via the `MSSyncTable`'s `purgeWithQuery:` method, which we don't use in this sample).
 
 ## Threading considerations
 
-Here's where we talk about dispatching results to the main (UI) thread, given that we used a background managed object queue. 
+Another thing which you may have also noticed is that after we changed the code to use the sync table, I wrapped the calls to the completion blocks in the `QSTodoService` methods in a dispatch call to the main thread:
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+        completion();
+    });
+
+Since we initialized the `NSManagedObjectContext` with a [`NSPrivateQueueConcurrencyType`](https://developer.apple.com/library/ios/documentation/cocoa/Reference/CoreDataFramework/Classes/NSManagedObjectContext_Class/NSManagedObjectContext.html#//apple_ref/c/econst/NSPrivateQueueConcurrencyType) (in the `managedObjectContext` method of the `QSAppDelegate` implementation), the operations performed by the context will be associated with a private dispatch queue, so we need to dispatch the result back to the main (UI) queue to be able to access the UI controls. If you had initialized the object context with the [`NSMainQueueConcurrencyType`](https://developer.apple.com/library/ios/documentation/cocoa/Reference/CoreDataFramework/Classes/NSManagedObjectContext_Class/NSManagedObjectContext.html#//apple_ref/c/econst/NSMainQueueConcurrencyType) that dispatch call would not have been necessary.
 
 ## Conflict handling
 
