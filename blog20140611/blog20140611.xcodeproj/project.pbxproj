@@ -28,6 +28,7 @@
 		879911811946BC16006E1D57 /* WindowsAzureMobileServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 879911801946BC16006E1D57 /* WindowsAzureMobileServices.framework */; };
 		879911831946BFB9006E1D57 /* CoreData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 879911821946BFB9006E1D57 /* CoreData.framework */; };
 		879911861946C67B006E1D57 /* QSTodoDataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 879911841946C67B006E1D57 /* QSTodoDataModel.xcdatamodeld */; };
+		879911891946E366006E1D57 /* QSUIAlertViewWithBlock.m in Sources */ = {isa = PBXBuildFile; fileRef = 879911881946E366006E1D57 /* QSUIAlertViewWithBlock.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -59,6 +60,8 @@
 		879911801946BC16006E1D57 /* WindowsAzureMobileServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = WindowsAzureMobileServices.framework; sourceTree = "<group>"; };
 		879911821946BFB9006E1D57 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 		879911851946C67B006E1D57 /* QSTodoDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = QSTodoDataModel.xcdatamodel; sourceTree = "<group>"; };
+		879911871946E366006E1D57 /* QSUIAlertViewWithBlock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = QSUIAlertViewWithBlock.h; path = ../QSUIAlertViewWithBlock.h; sourceTree = "<group>"; };
+		879911881946E366006E1D57 /* QSUIAlertViewWithBlock.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = QSUIAlertViewWithBlock.m; path = ../QSUIAlertViewWithBlock.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -110,6 +113,8 @@
 		03D1002316EC579A0005A1A9 /* blog20140611 */ = {
 			isa = PBXGroup;
 			children = (
+				879911871946E366006E1D57 /* QSUIAlertViewWithBlock.h */,
+				879911881946E366006E1D57 /* QSUIAlertViewWithBlock.m */,
 				8799117D194693FC006E1D57 /* QSTodoItemViewController.h */,
 				8799117E194693FC006E1D57 /* QSTodoItemViewController.m */,
 				03D1004816EC58490005A1A9 /* QSTodoService.h */,
@@ -221,6 +226,7 @@
 				879911861946C67B006E1D57 /* QSTodoDataModel.xcdatamodeld in Sources */,
 				03D1004A16EC58490005A1A9 /* QSTodoService.m in Sources */,
 				8799117F194693FC006E1D57 /* QSTodoItemViewController.m in Sources */,
+				879911891946E366006E1D57 /* QSUIAlertViewWithBlock.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

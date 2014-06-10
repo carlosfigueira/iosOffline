@@ -548,8 +548,99 @@ Since we initialized the `NSManagedObjectContext` with a [`NSPrivateQueueConcurr
 
 ## Conflict handling
 
-Edits in two different places, how can we handle that in the client?
+Well, offline handling of data is great, but what happens if there is a conflict when a push operation is being executed? To test this scenario you'll need a HTTP tool such as Fiddler or Postman to simulate changes from other devices (or two devices, or a device and the simulator - basically two different clients which can modify data).
+
+Let's load the data in the app. In my list I have an item to "Buy eggs", but I'll edit it to "Buy eggs (6)":
+
+![Edited item](images/010-EditedItem.png)
+
+On another client, I'll send a PATCH request for that same item to update it (the id, ETag, mobile service name and app key will be different for your service):
+
+    PATCH https://blog20140611.azure-mobile.net/tables/todoitem/D265929E-B17B-42D1-8FAB-D0ADF26486FA?__systemproperties=__version
+    Content-Type: application/json
+    x-zumo-application: UiMJHSlktoYGRxGtgkLfgGoZFjqcGS10
+    If-Match: "AAAAAAAAjkY="
+
+    {
+        "id": "D265929E-B17B-42D1-8FAB-D0ADF26486FA",
+        "text": "Buy organic eggs"
+    }
+
+Now try to refresh the items on the app. On the completion block in the call to `pullWithQuery:completion:`, the error parameter will be non-nil, which will cause the error to be printed out to the output via `NSLog` (line breaks added for clarity):
+
+    2014-06-09 23:40:04.297 blog20140611[8212:1303]
+        ERROR Error Domain=com.Microsoft.WindowsAzureMobileServices.ErrorDomain
+        Code=-1170 "Not all operations completed successfully" UserInfo=0x8f3a200
+        {com.Microsoft.WindowsAzureMobileServices.ErrorPushResultKey=(
+            "The server's version did not match the passed version"
+        ), NSLocalizedDescription=Not all operations completed successfully}
+
+So we have a local change which cannot be pushed, since it's conflicting with what's in the server. To solve this issue we need to add a conflict handler. We could do that in the server (as is shown in [this tutorial](http://azure.microsoft.com/en-us/documentation/articles/mobile-services-windows-store-dotnet-handle-database-conflicts/)), but here we'll let the user decide how to handle the conflict by dealing with it in the client, and for that we'll need to implement the `MSSyncContextDelegate` protocol.
+
+Let's start by changing our QSTodoService factory method to receive that delegate as a parameter. Remove the existing `defaultService` method and replace it with the declaration below:
+
+    + (QSTodoService *)defaultServiceWithDelegate:(id<MSSyncContextDelegate>)delegate;
+
+In the implementation file, in addition to the change in the factory method, also modify the private constructor `init` to take the delegate as a parameter:
+
+    -(QSTodoService *)initWithDelegate:(id<MSSyncContextDelegate>)syncDelegate
+
+Now change the call to the initializer to pass the delegate, and change the initialization of the sync context to pass the delegate:
+
+    self.client.syncContext = [[MSSyncContext alloc] initWithDelegate:syncDelegate dataSource:store callback:nil];
+
+On to the todo list view controller. Change the interface declaration to implement the `MSSyncContextDelegate` protocol:
+
+    @interface QSTodoListViewController : UITableViewController <MSSyncContextDelegate>
+
+and pass the `self` pointer to the delegate when initializing the `todoService` property:
+
+    // Create the todoService - this creates the Mobile Service client inside the wrapped service
+    self.todoService = [QSTodoService defaultServiceWithDelegate:self];
+
+Now we can implement the `tableOperation:onComplete:` operation, which will be called for every item which is being sent (pushed) to the service. Our goal here is to let the user choose which version they want to keep: the client (which will then override the version in the server), the server (whose value will remain unchanged, and will be updated in the client local table) or cancel the whole push operation (and leave the operation pending). And since while we're displaying the choices to the user another update may have happened in the same item on the server, we'll keep showing the options until the server stops returning a precondition failed response.
+
+    - (void)tableOperation:(MSTableOperation *)operation onComplete:(MSSyncItemBlock)completion
+    {
+        [self doOperation:operation complete:completion];
+    }
+
+    - (void)doOperation:(MSTableOperation *)operation complete:(MSSyncItemBlock)completion
+    {
+        [operation executeWithCompletion:^(NSDictionary *item, NSError *error) {
+            if (error.code == MSErrorPreconditionFailed) {
+                QSUIAlertViewWithBlock *alert = [[QSUIAlertViewWithBlock alloc] initWithCallback:^(NSInteger buttonIndex) {
+                    if (buttonIndex == 1) { // Client
+                        NSDictionary *serverItem = [error.userInfo objectForKey:MSErrorServerItemKey];
+                        NSMutableDictionary *adjustedItem = [operation.item mutableCopy];
+                    
+                        [adjustedItem setValue:[serverItem objectForKey:MSSystemColumnVersion] forKey:MSSystemColumnVersion];
+                        operation.item = adjustedItem;
+
+                        [self doOperation:operation complete:completion];
+                        return;
+
+                    } else if (buttonIndex == 2) { // Server
+                        NSDictionary *serverItem = [error.userInfo objectForKey:MSErrorServerItemKey];
+                        completion(serverItem, nil);
+                    } else { // Cancel
+                        [operation cancelPush];
+                        completion(nil, error);
+                    }
+                }];
+
+                [alert showAlertWithTitle:@"Server Conflict"
+                                  message:@"How do you want to resolve the conflict?"
+                        cancelButtonTitle:@"Cancel"
+                        otherButtonTitles:[NSArray arrayWithObjects:@"Use Client", @"Use Server", nil]];
+            } else {
+                completion(item, error);
+            }
+        }];
+    }
+
+In this code we're using a helper class which shows an alert view and takes a delegate that is invoked when the alert view is displayed. The complete code can be seen in the repository showed below.
 
 ## Wrapping up
 
-We're now adding offline support for native iOS applications, and like in the managed SDK, we're releasing it in a preview format. We really appreciate your feedback so we can continue improving in the SDKs for Azure Mobile Services. As usual, please leave comments / suggestions / questions in this post, or in or [MSDN Forum](http://social.msdn.microsoft.com/Forums/windowsazure/en-US/home?forum=azuremobile).
+We're now adding offline support for native iOS applications, and just like we did in the managed SDK, we're releasing it in a preview format. We really appreciate your feedback so we can continue improving in the SDKs for Azure Mobile Services. As usual, please leave comments / suggestions / questions in this post, or in or [MSDN Forum](http://social.msdn.microsoft.com/Forums/windowsazure/en-US/home?forum=azuremobile).

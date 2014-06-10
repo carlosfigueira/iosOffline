@@ -36,19 +36,19 @@
 
 @synthesize items;
 
-+ (QSTodoService *)defaultService
++ (QSTodoService *)defaultServiceWithDelegate:(id<MSSyncContextDelegate>)delegate
 {
     // Create a singleton instance of QSTodoService
     static QSTodoService* service;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        service = [[QSTodoService alloc] init];
+        service = [[QSTodoService alloc] initWithDelegate:delegate];
     });
     
     return service;
 }
 
--(QSTodoService *)init
+-(QSTodoService *)initWithDelegate:(id<MSSyncContextDelegate>)syncDelegate
 {
     self = [super init];
     
@@ -65,7 +65,7 @@
         NSManagedObjectContext *context = delegate.managedObjectContext;
         MSCoreDataStore *store = [[MSCoreDataStore alloc] initWithManagedObjectContext:context];
 
-        self.client.syncContext = [[MSSyncContext alloc] initWithDelegate:nil dataSource:store callback:nil];
+        self.client.syncContext = [[MSSyncContext alloc] initWithDelegate:syncDelegate dataSource:store callback:nil];
 
         // Create an MSSyncTable instance to allow us to work with the TodoItem table
         self.syncTable = [_client syncTableWithName:@"TodoItem"];
